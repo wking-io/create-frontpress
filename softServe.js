@@ -13,7 +13,7 @@ program
   .usage(`${chalk.green('<theme-name>')} [options]`)
   .action(name => (themeName = name))
   .on('--help', () => {
-    console.log(`    Only ${chalk.green('<theme-directory>')} is required.`);
+    console.log(`    Only ${chalk.green('<theme-name>')} is required.`);
     console.log();
     console.log(`    If you have any problems, do not hesitate to file an issue:`);
     console.log(`      ${chalk.cyan('https://github.com/wking-io/create-frontpress')}`);
@@ -23,7 +23,7 @@ program
 
 if (typeof themeName === 'undefined') {
   console.error('Please specify the project directory:');
-  console.log(`  ${chalk.cyan(program.name())} ${chalk.green('<project-directory>')}`);
+  console.log(`  ${chalk.cyan(program.name())} ${chalk.green('<theme-name>')}`);
   console.log();
   console.log('For example:');
   console.log(`  ${chalk.cyan(program.name())} ${chalk.green('my-theme')}`);
