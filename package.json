@@ -1,23 +1,25 @@
 {
-  "name": "softserve-cli",
-  "version": "0.0.4",
-  "keywords": ["wordpress", "frontend", "script", "cli", "build", "theme", "zero-config"],
-  "description": "Node CLI for generating Wordpress theme with front-end config already setup.",
-  "author": "Will King <contact@wking.io> (https://www.wking.io/)",
-  "repository": "https://github.com/wking-io/softserve-cli",
-  "license": "Apache-2.0",
-  "engines": {
-    "node": ">=4"
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "build": "cd packages/react-scripts && node bin/react-scripts.js build",
+    "changelog": "lerna-changelog",
+    "start": "cd packages/react-scripts && node bin/react-scripts.js start",
+    "test": "cd packages/react-scripts && node bin/react-scripts.js test --env=jsdom",
+    "format":
+      "prettier --trailing-comma es5 --single-quote --write 'packages/*/*.js' 'packages/*/!(node_modules)/**/*.js'",
+    "precommit": "lint-staged"
   },
-  "bugs": {
-    "url": "https://github.com/wking-io/softserve-cli"
+  "devDependencies": {
+    "eslint": "4.15.0",
+    "husky": "0.14.3",
+    "lerna": "2.7.1",
+    "lerna-changelog": "0.7.0",
+    "lint-staged": "6.0.0",
+    "prettier": "1.6.1"
   },
-  "files": ["index.js", "softServe.js"],
-  "bin": {
-    "softserve-cli": "./index.js"
-  },
-  "dependencies": {
-    "chalk": "2.3.0",
-    "commander": "2.13.0"
+  "lint-staged": {
+    "*.js": ["prettier --trailing-comma es5 --single-quote --write", "git add"],
+    "yarn.lock": ["git rm --cached"]
   }
 }

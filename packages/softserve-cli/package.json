@@ -1,0 +1,23 @@
+{
+  "name": "softserve-cli",
+  "version": "0.0.4",
+  "keywords": ["wordpress", "frontend", "script", "cli", "build", "theme", "zero-config"],
+  "description": "Node CLI for generating Wordpress theme with front-end config already setup.",
+  "author": "Will King <contact@wking.io> (https://www.wking.io/)",
+  "repository": "https://github.com/wking-io/softserve-cli",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=6"
+  },
+  "bugs": {
+    "url": "https://github.com/wking-io/softserve-cli"
+  },
+  "files": ["index.js", "softServe.js"],
+  "bin": {
+    "softserve-cli": "./index.js"
+  },
+  "dependencies": {
+    "chalk": "2.3.0",
+    "commander": "2.13.0"
+  }
+}
