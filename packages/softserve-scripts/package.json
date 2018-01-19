@@ -18,6 +18,9 @@
     "scripts",
     "template"
   ],
+  "bin": {
+    "softserve-scripts": "./bin/softserve-scripts.js"
+  },
   "browserslist": {
     "development": [
       "last 2 chrome versions",
@@ -32,6 +35,11 @@
     ]
   },
   "dependencies": {
-    "fluture": "8.0.1"
+    "browserslist": "2.11.3",
+    "chalk": "2.3.0",
+    "fluture": "8.0.1",
+    "inquirer": "5.0.0",
+    "os": "0.1.1",
+    "pkg-up": "2.0.0"
   }
 }

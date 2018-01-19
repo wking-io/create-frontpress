@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 'use strict';
 
 const chalk = require('chalk');
@@ -45,6 +43,15 @@ program
   .parse(process.argv);
 
 if (typeof themeName === 'undefined') {
+  if (program.info) {
+    envinfo.print({
+      packages: ['softserve-scripts'],
+      noNativeIDE: true,
+      duplicates: true,
+    });
+    process.exit(0);
+  }
+
   console.error('Please specify the theme directory:');
   console.log(`  ${chalk.cyan(program.name())} ${chalk.green('<theme-name>')}`);
   console.log();
