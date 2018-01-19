@@ -1,0 +1,28 @@
+{
+  "name": "softserve-scripts",
+  "version": "0.0.2",
+  "description": "Configuration and scripts for softserve-cli.",
+  "main": "index.js",
+  "repository": "https://github.com/wking-io/softserve-cli",
+  "author": "Will King <contact@wking.io> (https://www.wking.io/)",
+  "license": "Apache-2.0",
+  "files": [
+    "bin",
+    "config",
+    "scripts",
+    "template"
+  ],
+  "browserslist": {
+    "development": [
+      "last 2 chrome versions",
+      "last 2 firefox versions",
+      "last 2 edge versions"
+    ],
+    "production": [
+      ">1%",
+      "last 4 versions",
+      "Firefox ESR",
+      "not ie < 11"
+    ]
+  }
+}
