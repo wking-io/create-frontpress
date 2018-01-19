@@ -1,6 +1,6 @@
 {
   "name": "softserve-scripts",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Configuration and scripts for softserve-cli.",
   "main": "index.js",
   "repository": "https://github.com/wking-io/softserve-cli",
@@ -37,6 +37,7 @@
   "dependencies": {
     "browserslist": "2.11.3",
     "chalk": "2.3.0",
+    "cross-spawn": "5.1.0",
     "fluture": "8.0.1",
     "fs-extra": "5.0.0",
     "inquirer": "5.0.0",
