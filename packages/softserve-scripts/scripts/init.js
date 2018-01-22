@@ -15,7 +15,6 @@ const fs = require('fs-extra');
 const os = require('os');
 const path = require('path');
 const spawn = require('cross-spawn');
-const { tryCatch } = require('ramda');
 
 const { defaultBrowsers } = require('./utils/browsersHelper');
 
@@ -52,7 +51,7 @@ module.exports = function(themePath, themeName, verbose, originalDirectory) {
 
   // Copy the files for the user
   const templatePath = path.join(ownPath, 'template');
-  if (fs.existsSync(tempalatePath)) {
+  if (fs.existsSync(templatePath)) {
     fs.copySync(templatePath, themePath);
   } else {
     console.error(
@@ -94,6 +93,7 @@ module.exports = function(themePath, themeName, verbose, originalDirectory) {
   args.push('react', 'react-dom');
 
   if (gitInit()) {
+    console.log();
     console.log('Initialized git repository');
   }
 
@@ -138,6 +138,7 @@ module.exports = function(themePath, themeName, verbose, originalDirectory) {
     );
   }
   console.log();
+  return 'Happy Hacking!';
 };
 
 function gitInit() {
