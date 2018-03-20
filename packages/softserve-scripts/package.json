@@ -1,6 +1,6 @@
 {
   "name": "softserve-scripts",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "Configuration and scripts for softserve-cli.",
   "main": "index.js",
   "repository": "https://github.com/wking-io/softserve-cli",
@@ -64,6 +64,7 @@
     "ramda": "0.25.0",
     "sass-loader": "6.0.7",
     "url-loader": "1.0.1",
-    "webpack": "4.1.1"
+    "webpack": "4.1.1",
+    "webpack-cli": "2.0.12"
   }
 }
