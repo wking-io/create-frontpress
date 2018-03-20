@@ -5,10 +5,12 @@
     "build": "cd packages/react-scripts && node bin/react-scripts.js build",
     "changelog": "lerna-changelog",
     "start": "cd packages/react-scripts && node bin/react-scripts.js start",
-    "test": "cd packages/react-scripts && node bin/react-scripts.js test --env=jsdom",
+    "test":
+      "cd packages/react-scripts && node bin/react-scripts.js test --env=jsdom",
     "format":
       "prettier --trailing-comma es5 --single-quote --write 'packages/*/*.js' 'packages/*/!(node_modules)/**/*.js'",
-    "precommit": "lint-staged"
+    "precommit": "lint-staged",
+    "release": "lerna publish"
   },
   "devDependencies": {
     "eslint": "4.15.0",

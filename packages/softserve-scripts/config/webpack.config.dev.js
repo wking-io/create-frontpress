@@ -21,30 +21,22 @@ const postCSSLoaderOptions = {
   ],
 };
 
-const extractCommons = new webpack.optimize.CommonsChunkPlugin({
-  name: 'commons',
-  filename: 'commons.js',
-});
 const extractCSS = new ExtractTextPlugin('[name].bundle.css');
 
 // This is the development configuration.
 // It is focused on developer experience and fast rebuilds.
 // The production configuration is different and lives in a separate file.
 module.exports = {
-  // You may want 'eval' instead if you prefer to see the compiled output in DevTools.
-  devtool: 'cheap-module-source-map',
   // These are the "entry points" to our application.
   // This means they will be the "root" imports that are included in JS bundle.
   // The first two entry points enable "hot" CSS and auto-refreshes for JS.
   entry: Object.assign(
     // We ship a few polyfills by default:
-    { polyfill: paths.ownPath + 'config/polyfills' },
+    { polyfill: paths.ownPath + '/config/polyfills' },
     // Object representing all files not in a folder in the theme src
     paths.themeEntry
   ),
   output: {
-    // Add /* filename */ comments to generated require()s in the output.
-    pathinfo: true,
     path: paths.themeBuild,
     filename: '[name].bundle.js',
   },
@@ -148,9 +140,7 @@ module.exports = {
     ],
   },
   plugins: [
-    // Add module names to factory functions so they appear in browser profiler.
     new webpack.NamedModulesPlugin(),
-    extractCommons,
     extractCSS,
     // Moment.js is an extremely popular library that bundles large locale files
     // by default due to how Webpack interprets its code. This is a practical

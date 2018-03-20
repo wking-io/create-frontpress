@@ -7,12 +7,12 @@ const themeDirectory = fs.realpathSync(process.cwd());
 const resolveTheme = relativePath => path.resolve(themeDirectory, relativePath);
 
 const resolveOwn = relativePath => path.resolve(__dirname, '..', relativePath);
-const resolveEntryJs = path =>
+const resolveEntryJs = p =>
   fs
-    .readdirSync(path)
+    .readdirSync(p)
     .filter(file => path.extname(file) === '.js')
     .reduce((acc, file) => {
-      const entry = { [path.basename(file, '.js')]: path + file };
+      const entry = { [path.basename(file, '.js')]: `${p}/${file}` };
       return Object.assign(acc, entry);
     }, {});
 

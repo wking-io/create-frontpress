@@ -10,12 +10,8 @@
 
 const autoprefixer = require('autoprefixer');
 const webpack = require('webpack');
-const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const paths = require('./paths');
-
-// Source maps are resource heavy and can cause out of memory issue for large source files.
-const shouldUseSourceMap = process.env.GENERATE_SOURCEMAP !== 'false';
 
 // Options for PostCSS as we reference these options twice
 // Adds vendor prefixing based on your specified browser support in
@@ -32,10 +28,6 @@ const postCSSLoaderOptions = {
   ],
 };
 
-const extractCommons = new webpack.optimize.CommonsChunkPlugin({
-  name: 'commons',
-  filename: 'commons.js',
-});
 const extractCSS = new ExtractTextPlugin('[name].bundle.css');
 
 // This is the production configuration.
@@ -44,13 +36,10 @@ const extractCSS = new ExtractTextPlugin('[name].bundle.css');
 module.exports = {
   // Don't attempt to continue if there are any errors.
   bail: true,
-  // We generate sourcemaps in production. This is slow but gives good results.
-  // You can exclude the *.map files from the build during deployment.
-  devtool: shouldUseSourceMap ? 'source-map' : false,
   // In production, we only want to load the polyfills and the app code.
   entry: Object.assign(
     // We ship a few polyfills by default:
-    { polyfill: paths.ownPath + 'config/polyfills' },
+    { polyfill: paths.ownPath + '/config/polyfills' },
     // Object representing all files not in a folder in the theme src
     paths.themeEntry
   ),
@@ -156,37 +145,7 @@ module.exports = {
     ],
   },
   plugins: [
-    // Minify the code.
-    new UglifyJsPlugin({
-      uglifyOptions: {
-        ecma: 8,
-        compress: {
-          warnings: false,
-          // Disabled because of an issue with Uglify breaking seemingly valid code:
-          // https://github.com/facebook/create-react-app/issues/2376
-          // Pending further investigation:
-          // https://github.com/mishoo/UglifyJS2/issues/2011
-          comparisons: false,
-        },
-        mangle: {
-          safari10: true,
-        },
-        output: {
-          comments: false,
-          // Turned on because emoji and regex is not minified properly using default
-          // https://github.com/facebook/create-react-app/issues/2488
-          ascii_only: true,
-        },
-      },
-      // Use multi-process parallel running to improve the build speed
-      // Default number of concurrent runs: os.cpus().length - 1
-      parallel: true,
-      // Enable file caching
-      cache: true,
-      sourceMap: shouldUseSourceMap,
-    }),
     new webpack.NamedModulesPlugin(),
-    extractCommons,
     extractCSS,
     // Moment.js is an extremely popular library that bundles large locale files
     // by default due to how Webpack interprets its code. This is a practical

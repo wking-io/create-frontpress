@@ -12,49 +12,41 @@ process.on('unhandledRejection', err => {
 const chalk = require('chalk');
 const spawn = require('cross-spawn');
 const args = process.argv.slice(2);
+const paths = require('../config/paths');
 
-const scriptIndex = args.findIndex(
-  x => x === 'build' || x === 'eject' || x === 'start' || x === 'test'
-);
+const exec = (command, args) =>
+  spawn.sync(command, args, {
+    stdio: 'inherit',
+  });
+
+const scriptIndex = args.findIndex(x => x === 'build' || x === 'start');
 
 const script = scriptIndex === -1 ? args[0] : args[scriptIndex];
-const nodeArgs = scriptIndex > 0 ? args.slice(0, scriptIndex) : [];
 
 switch (script) {
   case 'build':
-  case 'start': {
-    const result = spawn.sync(
-      'node',
-      nodeArgs
-        .concat(require.resolve('../scripts/' + script))
-        .concat(args.slice(scriptIndex + 1)),
-      { stdio: 'inherit' }
-    );
-    if (result.signal) {
-      if (result.signal === 'SIGKILL') {
-        console.log('');
-        console.log(
-          chalk.red(
-            'The build failed because the process exited too early. ' +
-              'This probably means the system ran out of memory or someone called ' +
-              '`kill -9` on the process.'
-          )
-        );
-      } else if (result.signal === 'SIGTERM') {
-        console.log('');
-        console.log(
-          chalk.red(
-            'The build failed because the process exited too early. ' +
-              'Someone might have called `kill` or `killall`, or the system could ' +
-              'be shutting down.'
-          )
-        );
-      }
-      process.exit(1);
-    }
-    process.exit(result.status);
+    console.log('');
+    console.log(chalk.cyan('Bundling files for production!'));
+    console.log('');
+    exec('webpack', [
+      '--mode',
+      'production',
+      '--config',
+      paths.ownPath + '/config/webpack.config.prod',
+    ]);
     break;
-  }
+  case 'start':
+    console.log('');
+    console.log(chalk.cyan('Bundling files! Also, watching for changes.'));
+    console.log('');
+    exec('webpack', [
+      '--mode',
+      'development',
+      '--watch',
+      '--config',
+      paths.ownPath + '/config/webpack.config.dev',
+    ]);
+    break;
   default:
     console.log('');
     console.log('Unknown script "' + script + '".');

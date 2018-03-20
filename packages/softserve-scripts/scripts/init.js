@@ -14,7 +14,6 @@ const execSync = require('child_process').execSync;
 const fs = require('fs-extra');
 const os = require('os');
 const path = require('path');
-const spawn = require('cross-spawn');
 
 const { defaultBrowsers } = require('./utils/browsersHelper');
 
@@ -30,8 +29,8 @@ module.exports = function(themePath, themeName, verbose, originalDirectory) {
 
   // Setup the script rules
   themePackage.scripts = {
-    start: 'react-scripts start',
-    build: 'react-scripts build',
+    start: 'softserve-scripts start',
+    build: 'softserve-scripts build',
   };
 
   themePackage.browsersList = defaultBrowsers;
@@ -80,18 +79,6 @@ module.exports = function(themePath, themeName, verbose, originalDirectory) {
     }
   );
 
-  let command;
-  let args;
-
-  if (useYarn) {
-    command = 'yarnpkg';
-    args = ['add'];
-  } else {
-    command = 'npm';
-    args = ['install', '--save', verbose && '--verbose'].filter(e => e);
-  }
-  args.push('react', 'react-dom');
-
   if (gitInit()) {
     console.log();
     console.log('Initialized git repository');
@@ -100,15 +87,10 @@ module.exports = function(themePath, themeName, verbose, originalDirectory) {
   // Display the most elegant way to cd.
   // This needs to handle an undefined originalDirectory for
   // backward compatibility with old global-cli's.
-  let cdpath;
-  if (
-    originalDirectory &&
-    path.join(originalDirectory, themeName) === themePath
-  ) {
-    cdpath = themeName;
-  } else {
-    cdpath = themePath;
-  }
+  const cdpath =
+    originalDirectory && path.join(originalDirectory, themeName) === themePath
+      ? themeName
+      : themePath;
 
   // Change displayed command to yarn instead of yarnpkg
   const displayedCommand = useYarn ? 'yarn' : 'npm';
