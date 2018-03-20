@@ -3,27 +3,29 @@
 const path = require('path');
 const fs = require('fs');
 
-// Make sure any symlinks in the project folder are resolved:
-// https://github.com/facebookincubator/create-react-app/issues/637
 const themeDirectory = fs.realpathSync(process.cwd());
 const resolveTheme = relativePath => path.resolve(themeDirectory, relativePath);
 
 const resolveOwn = relativePath => path.resolve(__dirname, '..', relativePath);
-
-const resolveThemeJs = path =>
+const resolveEntryJs = path =>
   fs
     .readdirSync(path)
     .filter(file => path.extname(file) === '.js')
-    .map(file => path + file);
+    .reduce((acc, file) => {
+      const entry = { [path.basename(file, '.js')]: path + file };
+      return Object.assign(acc, entry);
+    }, {});
 
 // config before eject: we're in ./node_modules/react-scripts/config/
 module.exports = {
   themePath: resolveTheme('.'),
   themeBuild: resolveTheme('build'),
   themePublic: resolveTheme('public'),
-  themeJs: resolveThemeJs(resolveTheme('src/js')),
+  themeEntry: resolveEntryJs(resolveTheme('src/js')),
+  themeJs: resolveTheme('src/js'),
   themePackageJson: resolveTheme('package.json'),
   themeSrc: resolveTheme('src'),
+  themeStyles: resolveTheme('src/scss'),
   yarnLockFile: resolveTheme('yarn.lock'),
   themeNodeModules: resolveTheme('node_modules'),
   // These properties only exist before ejecting:
@@ -39,7 +41,7 @@ const softserveScriptsLinked =
   fs.existsSync(softserveScriptsPath) &&
   fs.lstatSync(softserveScriptsPath).isSymbolicLink();
 
-// config before publish: we're in ./packages/react-scripts/config/
+// config before publish: we're in ./packages/softserve-scripts/config/
 if (
   !softserveScriptsLinked &&
   __dirname.indexOf(path.join('packages', 'softserve-scripts', 'config')) !== -1

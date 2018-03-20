@@ -1,0 +1,19 @@
+{
+  "name": "eslint-config-softserve",
+  "version": "1.0.0",
+  "description": "ESLint configuration used by softserve-cli",
+  "repository": "https://github.com/wking-io/softserve-cli",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/wking-io/softserve-cli"
+  },
+  "files": ["index.js"],
+  "peerDependencies": {
+    "babel-eslint": "^8.2.2",
+    "eslint": "^4.1.1",
+    "eslint-plugin-import": "^2.6.0",
+    "eslint-config-prettier": "2.9.0",
+    "prettier": "1.10.2",
+    "prettier-eslint-cli": "4.7.1"
+  }
+}

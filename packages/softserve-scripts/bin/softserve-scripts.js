@@ -9,12 +9,14 @@ process.on('unhandledRejection', err => {
   throw err;
 });
 
+const chalk = require('chalk');
 const spawn = require('cross-spawn');
 const args = process.argv.slice(2);
 
 const scriptIndex = args.findIndex(
   x => x === 'build' || x === 'eject' || x === 'start' || x === 'test'
 );
+
 const script = scriptIndex === -1 ? args[0] : args[scriptIndex];
 const nodeArgs = scriptIndex > 0 ? args.slice(0, scriptIndex) : [];
 
@@ -30,16 +32,22 @@ switch (script) {
     );
     if (result.signal) {
       if (result.signal === 'SIGKILL') {
+        console.log('');
         console.log(
-          'The build failed because the process exited too early. ' +
-            'This probably means the system ran out of memory or someone called ' +
-            '`kill -9` on the process.'
+          chalk.red(
+            'The build failed because the process exited too early. ' +
+              'This probably means the system ran out of memory or someone called ' +
+              '`kill -9` on the process.'
+          )
         );
       } else if (result.signal === 'SIGTERM') {
+        console.log('');
         console.log(
-          'The build failed because the process exited too early. ' +
-            'Someone might have called `kill` or `killall`, or the system could ' +
-            'be shutting down.'
+          chalk.red(
+            'The build failed because the process exited too early. ' +
+              'Someone might have called `kill` or `killall`, or the system could ' +
+              'be shutting down.'
+          )
         );
       }
       process.exit(1);
@@ -48,6 +56,7 @@ switch (script) {
     break;
   }
   default:
+    console.log('');
     console.log('Unknown script "' + script + '".');
     console.log('Perhaps you need to update softserve-scripts?');
     console.log('See: https://github.com/wking-io/softserve-cli');

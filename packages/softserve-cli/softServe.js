@@ -36,7 +36,7 @@ program
       `    If you have any problems, do not hesitate to file an issue:`
     );
     console.log(
-      `      ${chalk.cyan('https://github.com/wking-io/create-frontpress')}`
+      `      ${chalk.cyan('https://github.com/wking-io/softserve-cli')}`
     );
     console.log();
   })
