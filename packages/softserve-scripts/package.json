@@ -1,6 +1,6 @@
 {
   "name": "softserve-scripts",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "Configuration and scripts for softserve-cli.",
   "main": "index.js",
   "repository": "https://github.com/wking-io/softserve-cli",
@@ -47,7 +47,7 @@
     "cssnano": "3.10.0",
     "eslint": "^4.1.1",
     "eslint-config-prettier": "2.9.0",
-    "eslint-config-softserve": "1.0.0",
+    "eslint-config-softserve": "^1.0.0",
     "eslint-loader": "2.0.0",
     "eslint-plugin-import": "2.9.0",
     "extract-text-webpack-plugin": "3.0.2",
@@ -65,8 +65,5 @@
     "sass-loader": "6.0.7",
     "url-loader": "1.0.1",
     "webpack": "4.1.1"
-  },
-  "devDependencies": {
-    "eslint": "4.19.0"
   }
 }
