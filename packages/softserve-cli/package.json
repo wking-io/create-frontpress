@@ -1,6 +1,6 @@
 {
   "name": "softserve-cli",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "keywords": [
     "wordpress",
     "frontend",
@@ -22,7 +22,7 @@
   },
   "files": [
     "index.js",
-    "softServe.js"
+    "soft-serve.js"
   ],
   "bin": {
     "softserve-cli": "./index.js"
