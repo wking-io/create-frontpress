@@ -14,103 +14,42 @@ const execSync = require('child_process').execSync;
 const fs = require('fs-extra');
 const os = require('os');
 const path = require('path');
+const { compose } = require('ramda');
 const { defaultBrowsers } = require('./utils/browsersHelper');
 
-module.exports = function(themePath, themeName, verbose, originalDirectory) {
-  const ownPackageName = require(path.join(__dirname, '..', 'package.json'))
-    .name;
-  const ownPath = path.join(themePath, 'node_modules', ownPackageName);
-  const themePackage = require(path.join(themePath, 'package.json'));
-  const useYarn = fs.existsSync(path.join(themePath, 'yarn.lock'));
+module.exports = compose(
+  announceComplete,
+  getAnnouncementVars,
+  gitInit,
+  changeFilename('eslintrc', '.eslintrc'),
+  changeFilename('gitignore', '.gitignore'),
+  copyTemplate,
+  renameReadme,
+  checkForReadme,
+  updatePackage,
+  getProjectDeps
+);
 
-  // Copy over some of the devDependencies
-  themePackage.dependencies = themePackage.dependencies || {};
-
-  // Setup the script rules
-  themePackage.scripts = {
-    start: 'softserve-scripts start',
-    build: 'softserve-scripts build',
-  };
-
-  themePackage.browsersList = defaultBrowsers;
-
-  fs.writeFileSync(
-    path.join(themePath, 'package.json'),
-    JSON.stringify(themePackage, null, 2) + os.EOL
-  );
-
-  const readmeExists = fs.existsSync(path.join(themePath, 'README.md'));
-  if (readmeExists) {
-    fs.renameSync(
-      path.join(themePath, 'README.md'),
-      path.join(themePath, 'README.old.md')
-    );
-  }
-
-  // Copy the files for the user
-  const templatePath = path.join(ownPath, 'template');
-  if (fs.existsSync(templatePath)) {
-    fs.copySync(templatePath, themePath);
-  } else {
-    console.error(
-      `Could not locate supplied template: ${chalk.green(templatePath)}`
-    );
-    return;
-  }
-
-  // Rename gitignore after the fact to prevent npm from renaming it to .npmignore
-  // See: https://github.com/npm/npm/issues/1862
-  fs.move(
-    path.join(themePath, 'gitignore'),
-    path.join(themePath, '.gitignore'),
-    [],
-    err => {
-      if (err) {
-        // Append if there's already a `.gitignore` file there
-        if (err.code === 'EEXIST') {
-          const data = fs.readFileSync(path.join(themePath, 'gitignore'));
-          fs.appendFileSync(path.join(themePath, '.gitignore'), data);
-          fs.unlinkSync(path.join(themePath, 'gitignore'));
-        } else {
-          throw err;
-        }
-      }
-    }
-  );
-
-  if (gitInit()) {
-    console.log();
-    console.log('Initialized git repository');
-  }
-
-  // Display the most elegant way to cd.
-  // This needs to handle an undefined originalDirectory for
-  // backward compatibility with old global-cli's.
-  const cdpath =
-    originalDirectory && path.join(originalDirectory, themeName) === themePath
-      ? themeName
-      : themePath;
-
-  // Change displayed command to yarn instead of yarnpkg
-  const displayedCommand = useYarn ? 'yarn' : 'npm';
-
+function announceComplete(config) {
   console.log();
-  console.log(`Success! Created ${themeName} at ${themePath}`);
+  console.log(`Success! Created ${config.themeName} at ${config.root}`);
   console.log('Inside that directory, you can run several commands:');
   console.log();
-  console.log(chalk.cyan(`  ${displayedCommand} start`));
+  console.log(chalk.cyan(`  ${config.displayedCommand} start`));
   console.log('    Starts the development server.');
   console.log();
   console.log(
-    chalk.cyan(`  ${displayedCommand} ${useYarn ? '' : 'run '}build`)
+    chalk.cyan(
+      `  ${config.displayedCommand} ${config.useYarn ? '' : 'run '}build`
+    )
   );
   console.log('    Bundles the app into static files for production.');
   console.log();
   console.log('We suggest that you begin by typing:');
   console.log();
-  console.log(chalk.cyan('  cd'), cdpath);
-  console.log(`  ${chalk.cyan(`${displayedCommand} start`)}`);
-  if (readmeExists) {
+  console.log(chalk.cyan('  cd'), config.cdpath);
+  console.log(`  ${chalk.cyan(`${config.displayedCommand} start`)}`);
+  if (config.readmeExists) {
     console.log();
     console.log(
       chalk.yellow(
@@ -120,26 +59,125 @@ module.exports = function(themePath, themeName, verbose, originalDirectory) {
   }
   console.log();
   return 'Happy Hacking!';
-};
+}
 
-function gitInit() {
-  try {
-    execSync('git --version', { stdio: 'ignore' });
+function getAnnouncementVars(config) {
+  const cdpath =
+    config.originalDirectory &&
+    path.join(config.originalDirectory, config.themeName) === config.root
+      ? config.themeName
+      : config.root;
 
-    if (insideGitRepository() || insideMercurialRepository()) {
-      return false;
+  // Change displayed command to yarn instead of yarnpkg
+  const displayedCommand = config.useYarn ? 'yarn' : 'npm';
+
+  return Object.assign(config, { cdpath, displayedCommand });
+}
+
+function gitInit(config) {
+  if (config.createRepository) {
+    try {
+      execSync('git --version', { stdio: 'ignore' });
+
+      if (!insideGitRepository() || !insideMercurialRepository()) {
+        execSync('git init', { stdio: 'ignore' });
+        execSync('git add -A', { stdio: 'ignore' });
+        execSync('git commit -m "Initial commit from softserve-cli"', {
+          stdio: 'ignore',
+        });
+      }
+
+      console.log();
+      console.log('Initialized git repository');
+    } catch (e) {
+      return config;
     }
-
-    execSync('git init', { stdio: 'ignore' });
-    execSync('git add -A', { stdio: 'ignore' });
-    execSync('git commit -m "Initial commit from softserve-cli"', {
-      stdio: 'ignore',
-    });
-
-    return true;
-  } catch (e) {
-    return false;
   }
+
+  return config;
+}
+
+function changeFilename(before, after) {
+  return function(config) {
+    // Rename gitignore after the fact to prevent npm from renaming it to .npmignore
+    // See: https://github.com/npm/npm/issues/1862
+    fs.move(
+      path.join(config.root, before),
+      path.join(config.root, after),
+      [],
+      err => {
+        if (err) {
+          // Append if there's already a `.gitignore` file there
+          if (err.code === 'EEXIST') {
+            fs.appendFileSync(
+              path.join(config.root, after),
+              fs.readFileSync(path.join(config.root, before))
+            );
+            fs.unlinkSync(path.join(config.root, before));
+          } else {
+            throw err;
+          }
+        }
+      }
+    );
+    return config;
+  };
+}
+
+function copyTemplate(config) {
+  const templatePath = path.join(config.ownPath, 'template');
+  if (fs.existsSync(templatePath)) {
+    console.log('');
+    console.log('Copying the theme template...');
+    fs.copySync(templatePath, config.root);
+  } else {
+    console.error(
+      `Could not locate supplied template: ${chalk.green(templatePath)}`
+    );
+  }
+
+  return config;
+}
+
+function renameReadme(config) {
+  if (config.readmeExists) {
+    fs.renameSync(
+      path.join(config.root, 'README.md'),
+      path.join(config.root, 'README.old.md')
+    );
+  }
+  return config;
+}
+
+function checkForReadme(config) {
+  return Object.assign(config, {
+    readmeExists: fs.existsSync(path.join(config.root, 'README.md')),
+  });
+}
+
+function updatePackage(config) {
+  // Copy over some of the devDependencies
+  config.themePackage.dependencies = config.themePackage.dependencies || {};
+
+  // Setup the script rules
+  config.themePackage.scripts = {
+    start: 'softserve-scripts start',
+    build: 'softserve-scripts build',
+  };
+
+  config.themePackage.browsersList = defaultBrowsers;
+
+  fs.writeFileSync(
+    path.join(config.root, 'package.json'),
+    JSON.stringify(config.themePackage, null, 2) + os.EOL
+  );
+}
+
+function getProjectDeps(config) {
+  const ownPath = path.join(config.root, 'node_modules', config.themeName);
+  const themePackage = require(path.join(config.root, 'package.json'));
+
+  return Object.assign(config, { ownPath, themePackage });
 }
 
 function insideGitRepository() {

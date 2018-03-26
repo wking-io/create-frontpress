@@ -37,9 +37,7 @@ program
   })
   .parse(process.argv);
 
-const themeName = program.args[0];
-
-if (typeof themeName === 'undefined') {
+if (typeof program.args[0] === 'undefined') {
   if (program.info) {
     envinfo.print({
       packages: ['softserve-scripts'],
@@ -61,14 +59,16 @@ if (typeof themeName === 'undefined') {
   process.exit(1);
 }
 
-createTheme(program).fork(reason => {
+createTheme(program).fork(handleFailure, console.log);
+
+function handleFailure(config) {
   console.log();
   console.log('Aborting installation.');
-  if (reason.command) {
-    console.log(`  ${chalk.cyan(reason.command)} has failed.`);
+  if (config.reason.command) {
+    console.log(`  ${chalk.cyan(config.reason.command)} has failed.`);
   } else {
     console.log(chalk.red('Unexpected error. Please report it as a bug:'));
-    console.log(reason);
+    console.log(config.reason);
   }
   console.log();
 
@@ -80,7 +80,7 @@ createTheme(program).fork(reason => {
     'yarn-debug.log',
     'node_modules',
   ];
-  const currentFiles = fs.readdirSync(path.join(root));
+  const currentFiles = fs.readdirSync(path.join(config.root));
   currentFiles.forEach(file => {
     knownGeneratedFiles.forEach(fileToMatch => {
       // This will catch `(npm-debug|yarn-error|yarn-debug).log*` files
@@ -90,24 +90,24 @@ createTheme(program).fork(reason => {
         file === fileToMatch
       ) {
         console.log(`Deleting generated file... ${chalk.cyan(file)}`);
-        fs.removeSync(path.join(root, file));
+        fs.removeSync(path.join(config.root, file));
       }
     });
   });
-  const remainingFiles = fs.readdirSync(path.join(root));
+  const remainingFiles = fs.readdirSync(path.join(config.root));
   if (!remainingFiles.length) {
     // Delete target folder if empty
     console.log(
-      `Deleting ${chalk.cyan(`${themeName} /`)} from ${chalk.cyan(
-        path.resolve(root, '..')
+      `Deleting ${chalk.cyan(`${config.themeName} /`)} from ${chalk.cyan(
+        path.resolve(config.root, '..')
       )}`
     );
-    process.chdir(path.resolve(root, '..'));
-    fs.removeSync(path.join(root));
+    process.chdir(path.resolve(config.root, '..'));
+    fs.removeSync(path.join(config.root));
   }
   console.log('Done.');
   process.exit(1);
-}, console.log);
+}
 
 function createTheme(program) {
   return compose(
@@ -149,12 +149,7 @@ function runInit(config) {
   );
 
   const init = require(scriptsPath);
-  return init(
-    config.root,
-    config.themeName,
-    config.verbose,
-    config.originalDirectory
-  );
+  return init(config);
 }
 
 function newInstall(config) {
