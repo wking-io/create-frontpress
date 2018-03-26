@@ -26,6 +26,7 @@ module.exports = compose(
   copyTemplate,
   renameReadme,
   checkForReadme,
+  writePackage,
   updatePackage,
   getProjectDeps
 );
@@ -155,26 +156,40 @@ function checkForReadme(config) {
   });
 }
 
-function updatePackage(config) {
-  // Copy over some of the devDependencies
-  config.themePackage.dependencies = config.themePackage.dependencies || {};
-
-  // Setup the script rules
-  config.themePackage.scripts = {
-    start: 'softserve-scripts start',
-    build: 'softserve-scripts build',
-  };
-
-  config.themePackage.browsersList = defaultBrowsers;
-
+function writePackage(config) {
   fs.writeFileSync(
     path.join(config.root, 'package.json'),
     JSON.stringify(config.themePackage, null, 2) + os.EOL
   );
+
+  return config;
+}
+
+function updatePackage(config) {
+  // Copy over some of the devDependencies
+  const dependencies = config.themePackage.dependencies || {};
+
+  // Setup the script rules
+  const scripts = {
+    start: 'softserve-scripts start',
+    build: 'softserve-scripts build',
+  };
+
+  const browsersList = defaultBrowsers;
+
+  const themePackage = Object.assign(config.themePackage, {
+    browsersList,
+    dependencies,
+    scripts,
+  });
+
+  return Object.assign(config, themePackage);
 }
 
 function getProjectDeps(config) {
-  const ownPath = path.join(config.root, 'node_modules', config.themeName);
+  const ownPackageName = require(path.join(__dirname, '..', 'package.json'))
+    .name;
+  const ownPath = path.join(config.root, 'node_modules', ownPackageName);
   const themePackage = require(path.join(config.root, 'package.json'));
 
   return Object.assign(config, { ownPath, themePackage });
