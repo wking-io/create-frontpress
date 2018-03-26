@@ -9,23 +9,18 @@ const Future = require('fluture');
 const os = require('os');
 const path = require('path');
 const program = require('commander');
-const { compose } = require('ramda');
+const { compose, map, chain } = require('ramda');
 const semver = require('semver');
 const spawn = require('cross-spawn');
 const url = require('url');
 const validatePackageName = require('validate-npm-package-name');
 
 const packageJson = require('./package.json');
-// Theme Name: This is using let so that we can reassign in program
-let themeName;
 
 program
   .version(packageJson.version)
   .arguments('<theme-name>')
   .usage(`${chalk.green('<theme-name>')} [options]`)
-  .action(name => {
-    themeName = name;
-  })
   .option('--verbose', 'print additional logs')
   .option('--info', 'print environment debug info')
   .option('--use-npm')
@@ -41,6 +36,8 @@ program
     console.log();
   })
   .parse(process.argv);
+
+const themeName = program.args[0];
 
 if (typeof themeName === 'undefined') {
   if (program.info) {
@@ -64,46 +61,184 @@ if (typeof themeName === 'undefined') {
   process.exit(1);
 }
 
-createTheme(themeName, program.verbose, program.scriptsVersion, program.useNpm);
-
-function createTheme(name, verbose, version, useNpm) {
-  const root = path.resolve(name);
-  const themeName = path.basename(root);
-  const originalDirectory = process.cwd();
-
-  checkThemeName(themeName, originalDirectory);
-  fs.ensureDirSync(themeName);
-  if (!isSafeToCreateThemeIn(root, themeName)) {
-    process.exit(1);
+createTheme(program).fork(reason => {
+  console.log();
+  console.log('Aborting installation.');
+  if (reason.command) {
+    console.log(`  ${chalk.cyan(reason.command)} has failed.`);
+  } else {
+    console.log(chalk.red('Unexpected error. Please report it as a bug:'));
+    console.log(reason);
   }
-
-  console.log(`Creating a new Wordpress Theme in ${chalk.green(root)}.`);
   console.log();
 
-  const packageJson = {
-    name: themeName,
-    version: '0.1.0',
-    private: true,
-  };
+  // On 'exit' we will delete these files from target directory.
+  const knownGeneratedFiles = [
+    'package.json',
+    'npm-debug.log',
+    'yarn-error.log',
+    'yarn-debug.log',
+    'node_modules',
+  ];
+  const currentFiles = fs.readdirSync(path.join(root));
+  currentFiles.forEach(file => {
+    knownGeneratedFiles.forEach(fileToMatch => {
+      // This will catch `(npm-debug|yarn-error|yarn-debug).log*` files
+      // and the rest of knownGeneratedFiles.
+      if (
+        (fileToMatch.match(/.log/g) && file.indexOf(fileToMatch) === 0) ||
+        file === fileToMatch
+      ) {
+        console.log(`Deleting generated file... ${chalk.cyan(file)}`);
+        fs.removeSync(path.join(root, file));
+      }
+    });
+  });
+  const remainingFiles = fs.readdirSync(path.join(root));
+  if (!remainingFiles.length) {
+    // Delete target folder if empty
+    console.log(
+      `Deleting ${chalk.cyan(`${themeName} /`)} from ${chalk.cyan(
+        path.resolve(root, '..')
+      )}`
+    );
+    process.chdir(path.resolve(root, '..'));
+    fs.removeSync(path.join(root));
+  }
+  console.log('Done.');
+  process.exit(1);
+}, console.log);
 
-  fs.writeFileSync(
-    path.join(root, 'package.json'),
-    JSON.stringify(packageJson, null, 2) + os.EOL
+function createTheme(program) {
+  return compose(
+    newRun,
+    checkNpmWorks,
+    moveIntoTheme,
+    checkYarn,
+    createPackage(os.EOL),
+    initPackage,
+    announceBuild,
+    setupDirectory,
+    checkThemeName,
+    getConfig
+  )(program);
+}
+
+function newRun(config) {
+  return compose(
+    map(runInit),
+    chain(newInstall),
+    map(buildCmd),
+    map(announceAgain),
+    newCheckIfOnline,
+    announceInstall,
+    addPackageToInstall
+  )(config);
+}
+
+function runInit(config) {
+  checkNodeVersion(config.packageToInstall);
+  checkForScriptDep(config.packageToInstall);
+
+  const scriptsPath = path.resolve(
+    process.cwd(),
+    'node_modules',
+    config.packageToInstall,
+    'scripts',
+    'init.js'
   );
 
-  let useYarn = !useNpm;
-  useYarn &&
-    commandWorks('yarnpkg --version').fork(
-      () => (useYarn = false),
-      () => (useYarn = true)
-    );
+  const init = require(scriptsPath);
+  return init(
+    config.root,
+    config.themeName,
+    config.verbose,
+    config.originalDirectory
+  );
+}
 
-  process.chdir(root);
-  if (!useYarn && !checkThatNpmCanReadCwd()) {
+function newInstall(config) {
+  return Future((rej, res) => {
+    spawn(config.command.name, config.command.args, {
+      stdio: 'inherit',
+    }).on('close', code => {
+      if (code !== 0) {
+        rej({
+          command: `${config.name} ${config.args.join(' ')}`,
+        });
+      } else {
+        res(config);
+      }
+    });
+  });
+}
+
+function buildCmd(config) {
+  const name = config.useYarn ? 'yarn' : 'npm';
+  const args = config.useYarn
+    ? ['add', config.packageToInstall, '--exact', '--cwd', config.root]
+    : ['i', config.packageToInstall, '--save-exact', '--loglevel', 'error'];
+
+  if (!config.isOnline && config.useYarn) {
+    args.push('--offline');
+
+    console.log(chalk.yellow('You appear to be offline.'));
+    console.log(chalk.yellow('Falling back to the local Yarn cache.'));
+    console.log();
+  }
+
+  return Object.assign(config, { command: { name, args } });
+}
+
+function announceAgain(config) {
+  console.log(`Installing ${chalk.cyan(config.packageToInstall)}...`);
+  console.log();
+  return config;
+}
+
+function newCheckIfOnline(config) {
+  if (!config.useYarn) {
+    // Don't ping the Yarn registry.
+    // We'll just assume the best case.
+
+    return Future.of(Object.assign(config, { isOnline: true }));
+  }
+
+  return Future((rej, res) => {
+    dns.lookup('registry.yarnpkg.com', err => {
+      let proxy;
+      if (err != null && (proxy = getProxy())) {
+        // If a proxy is defined, we likely can't resolve external hostnames.
+        // Try to resolve the proxy name as an indication of a connection.
+        dns.lookup(url.parse(proxy).hostname, proxyErr => {
+          res(Object.assign(config, { isOnline: proxyErr == null }));
+        });
+      } else {
+        res(Object.assign(config, { isOnline: err == null }));
+      }
+    });
+  });
+}
+
+function announceInstall(config) {
+  console.log('Installing packages. This might take a couple of minutes.');
+  return config;
+}
+function addPackageToInstall(config) {
+  return Object.assign(config, {
+    packageToInstall: getInstallPackage(
+      config.version,
+      config.originalDirectory
+    ),
+  });
+}
+
+function checkNpmWorks(config) {
+  if (!config.useYarn && !checkThatNpmCanReadCwd()) {
     process.exit(1);
   }
 
-  if (!useYarn) {
+  if (!config.useYarn) {
     const npmInfo = checkNpmVersion();
     if (!npmInfo.hasMinNpm) {
       if (npmInfo.npmVersion) {
@@ -116,164 +251,123 @@ function createTheme(name, verbose, version, useNpm) {
       }
     }
   }
-  run(root, themeName, version, verbose, originalDirectory, useYarn);
+
+  return config;
 }
 
-function run(root, themeName, version, verbose, originalDirectory, useYarn) {
-  const packageToInstall = getInstallPackage(version, originalDirectory);
-
-  console.log('Installing packages. This might take a couple of minutes.');
-  checkIfOnline(useYarn)
-    .chain(isOnline => {
-      console.log(`Installing ${chalk.cyan(packageToInstall)}...`);
-      console.log();
-
-      return install(root, useYarn, packageToInstall, verbose, isOnline).map(
-        () => packageToInstall
-      );
-    })
-    .map(packageName => {
-      checkNodeVersion(packageName);
-      checkForScriptDep(packageName);
-
-      const scriptsPath = path.resolve(
-        process.cwd(),
-        'node_modules',
-        packageName,
-        'scripts',
-        'init.js'
-      );
-
-      const init = require(scriptsPath);
-      return init(root, themeName, verbose, originalDirectory);
-    })
-    .fork(reason => {
-      console.log();
-      console.log('Aborting installation.');
-      if (reason.command) {
-        console.log(`  ${chalk.cyan(reason.command)} has failed.`);
-      } else {
-        console.log(chalk.red('Unexpected error. Please report it as a bug:'));
-        console.log(reason);
-      }
-      console.log();
-
-      // On 'exit' we will delete these files from target directory.
-      const knownGeneratedFiles = [
-        'package.json',
-        'npm-debug.log',
-        'yarn-error.log',
-        'yarn-debug.log',
-        'node_modules',
-      ];
-      const currentFiles = fs.readdirSync(path.join(root));
-      currentFiles.forEach(file => {
-        knownGeneratedFiles.forEach(fileToMatch => {
-          // This will catch `(npm-debug|yarn-error|yarn-debug).log*` files
-          // and the rest of knownGeneratedFiles.
-          if (
-            (fileToMatch.match(/.log/g) && file.indexOf(fileToMatch) === 0) ||
-            file === fileToMatch
-          ) {
-            console.log(`Deleting generated file... ${chalk.cyan(file)}`);
-            fs.removeSync(path.join(root, file));
-          }
-        });
-      });
-      const remainingFiles = fs.readdirSync(path.join(root));
-      if (!remainingFiles.length) {
-        // Delete target folder if empty
-        console.log(
-          `Deleting ${chalk.cyan(`${themeName} /`)} from ${chalk.cyan(
-            path.resolve(root, '..')
-          )}`
-        );
-        process.chdir(path.resolve(root, '..'));
-        fs.removeSync(path.join(root));
-      }
-      console.log('Done.');
-      process.exit(1);
-    }, console.log);
+function moveIntoTheme(config) {
+  process.chdir(config.root);
+  return config;
 }
 
-function install(root, useYarn, dependencies, verbose, isOnline) {
-  return Future((rej, res) => {
-    let command;
-    let args;
-    if (useYarn) {
-      command = 'yarnpkg';
-      args = ['add', '--exact'];
-      if (!isOnline) {
-        args.push('--offline');
-      }
-      args.push(dependencies);
+function checkYarn(config) {
+  let useYarn = config.useYarn;
+  useYarn &&
+    commandWorks('yarnpkg --version').fork(
+      () => (useYarn = false),
+      () => (useYarn = true)
+    );
 
-      // Explicitly set cwd() to work around issues with default install locations
-      args.push('--cwd');
-      args.push(root);
+  return Object.assign(config, { useYarn });
+}
 
-      if (!isOnline) {
-        console.log(chalk.yellow('You appear to be offline.'));
-        console.log(chalk.yellow('Falling back to the local Yarn cache.'));
-        console.log();
-      }
-    } else {
-      command = 'npm';
-      args = [
-        'install',
-        '--save',
-        '--save-exact',
-        '--loglevel',
-        'error',
-      ].concat(dependencies);
-    }
+function createPackage(eol) {
+  return function(config) {
+    fs.writeFileSync(
+      path.join(config.root, 'package.json'),
+      JSON.stringify(config.package, null, 2) + eol
+    );
+    return config;
+  };
+}
 
-    if (verbose) {
-      args.push('--verbose');
-    }
-
-    spawn(command, args, { stdio: 'inherit' }).on('close', code => {
-      if (code !== 0) {
-        rej({
-          command: `${command} ${args.join(' ')}`,
-        });
-        return;
-      }
-      res();
-    });
+function initPackage(config) {
+  return Object.assign(config, {
+    package: {
+      name: config.themeName,
+      version: '0.1.0',
+      private: true,
+    },
   });
 }
 
-function checkThemeName(themeName, originalPath) {
-  return compose(
-    checkValidDirectory(originalPath),
-    checkNotDependency,
-    checkValidNpm
-  )(themeName);
+function announceBuild(config) {
+  console.log(`Creating a new Wordpress Theme in ${chalk.green(config.root)}.`);
+  console.log();
+  return config;
 }
 
-function checkValidNpm(themeName) {
-  const validationResult = validatePackageName(themeName);
+function setupDirectory(config) {
+  fs.ensureDirSync(config.themeName);
+  if (!isSafeToCreateThemeIn(config.root, config.themeName)) {
+    process.exit(1);
+  }
+  return config;
+}
+
+function getConfig(program) {
+  const name = program.args[0];
+  const root = path.resolve(name);
+  return {
+    root,
+    themeName: path.basename(root),
+    originalDirectory: process.cwd(),
+    useYarn: !program.useNpm,
+    verbose: program.verbose,
+    version: program.version,
+  };
+}
+
+/**
+ * Runs the theme name through the following checks. If any of the checks 
+ * fail the script exits and returns a message explaining the failure
+ * 
+ * 1. Checks it is valid NPM package name
+ * 2. Check that it does not match any project dependencies
+ * 3. Check that the directory
+ */
+function checkThemeName(config) {
+  return compose(checkValidDirectory, checkNotDependency, checkValidNpm)(
+    config
+  );
+}
+
+/**
+ * Print results of NPM validation.
+ */
+function printValidationResults(results, color) {
+  if (typeof results !== 'undefined') {
+    results.forEach(error => {
+      console.error(chalk[color](`  *  ${error}`));
+    });
+  }
+}
+
+/**
+ * Check that passed in themeName is a valid NPM package name.
+ */
+function checkValidNpm(config) {
+  const validationResult = validatePackageName(config.themeName);
   if (!validationResult.validForNewPackages) {
     console.error(
       `Could not create a project called ${chalk.red(
-        `"${themeName}"`
+        `"${config.themeName}"`
       )} because of npm naming restrictions:`
     );
-    printValidationResults(validationResult.errors);
-    printValidationResults(validationResult.warnings);
+    printValidationResults(validationResult.errors, 'red');
+    printValidationResults(validationResult.warnings, 'yellow');
     process.exit(1);
   }
-  return themeName;
+  return config;
 }
 
-function checkNotDependency(themeName) {
+function checkNotDependency(config) {
   const dependencies = ['softserve-scripts'].sort();
-  if (dependencies.indexOf(themeName) >= 0) {
+  if (dependencies.indexOf(config.themeName) >= 0) {
     console.error(
       chalk.red(
         `We cannot create a project called ${chalk.green(
-          themeName
+          config.themeName
         )} because a dependency with the same name exists.\n` +
           `Due to the way npm works, the following names are not allowed:\n\n`
       ) +
@@ -282,42 +376,35 @@ function checkNotDependency(themeName) {
     );
     process.exit(1);
   }
-  return themeName;
+  return config;
 }
 
-function checkValidDirectory(source) {
-  return function(themeName) {
-    const directories = getDirectories(source);
-    if (directories.indexOf(themeName) >= 0) {
-      console.error(
-        chalk.red(
-          `We cannot create a project called ${chalk.green(
-            themeName
-          )} because a directory with the same name exists.\n\n`
-        ) +
-          chalk.cyan(directories.map(dirName => `  ${dirName}`).join('\n')) +
-          chalk.red('\n\nPlease choose a different project name.')
-      );
-      process.exit(1);
-    }
-    return themeName;
-  };
-}
-
-function printValidationResults(results) {
-  if (typeof results !== 'undefined') {
-    results.forEach(error => {
-      console.error(chalk.red(`  *  ${error}`));
-    });
-  }
+/**
+ * Returns if the passed in 
+ */
+function isDirectory(source) {
+  return fs.lstatSync(source).isDirectory();
 }
 
 function getDirectories(source) {
   return fs.readdirSync(source).filter(isDirectory);
 }
 
-function isDirectory(source) {
-  return fs.lstatSync(source).isDirectory();
+function checkValidDirectory(config) {
+  const directories = getDirectories(config.originalDirectory);
+  if (directories.indexOf(config.themeName) >= 0) {
+    console.error(
+      chalk.red(
+        `We cannot create a project called ${chalk.green(
+          config.themeName
+        )} because a directory with the same name exists.\n\n`
+      ) +
+        chalk.cyan(directories.map(dirName => `  ${dirName}`).join('\n')) +
+        chalk.red('\n\nPlease choose a different project name.')
+    );
+    process.exit(1);
+  }
+  return config;
 }
 
 // Check files in newly created directory to make sure we are safe to make theme

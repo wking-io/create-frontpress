@@ -20,4 +20,4 @@ if (major < 6) {
   process.exit(1);
 }
 
-require('./softServe');
+require('./soft-serve');

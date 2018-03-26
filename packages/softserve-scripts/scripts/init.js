@@ -14,7 +14,6 @@ const execSync = require('child_process').execSync;
 const fs = require('fs-extra');
 const os = require('os');
 const path = require('path');
-
 const { defaultBrowsers } = require('./utils/browsersHelper');
 
 module.exports = function(themePath, themeName, verbose, originalDirectory) {
