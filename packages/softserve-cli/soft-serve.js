@@ -22,6 +22,10 @@ program
   .arguments('<theme-name>')
   .usage(`${chalk.green('<theme-name>')} [options]`)
   .option('--verbose', 'print additional logs')
+  .option(
+    '--the-works',
+    'use template with the works. Includes SASS variables, common Wordpress functions, and more.'
+  )
   .option('--info', 'print environment debug info')
   .option('--use-npm')
   .on('--help', () => {
@@ -310,6 +314,7 @@ function getConfig(program) {
     useYarn: !program.useNpm,
     verbose: program.verbose,
     version: program.version,
+    theWorks: program.theWorks,
   };
 }
 
@@ -525,29 +530,6 @@ function getInstallPackage(version) {
     packageToInstall += `@${validSemver}`;
   }
   return packageToInstall;
-}
-
-function checkIfOnline(useYarn) {
-  if (!useYarn) {
-    // Don't ping the Yarn registry.
-    // We'll just assume the best case.
-    return Future.of(true);
-  }
-
-  return Future((rej, res) => {
-    dns.lookup('registry.yarnpkg.com', err => {
-      let proxy;
-      if (err != null && (proxy = getProxy())) {
-        // If a proxy is defined, we likely can't resolve external hostnames.
-        // Try to resolve the proxy name as an indication of a connection.
-        dns.lookup(url.parse(proxy).hostname, proxyErr => {
-          res(proxyErr == null);
-        });
-      } else {
-        res(err == null);
-      }
-    });
-  });
 }
 
 function getProxy() {
