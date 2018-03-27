@@ -1,6 +1,6 @@
 {
   "name": "softserve-scripts",
-  "version": "0.0.27",
+  "version": "0.0.28",
   "description": "Configuration and scripts for softserve-cli.",
   "main": "index.js",
   "repository": "https://github.com/wking-io/softserve-cli",
