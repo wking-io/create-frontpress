@@ -28,7 +28,7 @@ const postCSSLoaderOptions = {
   ],
 };
 
-const extractCSS = new ExtractTextPlugin('[name].bundle.css');
+const extractCSS = new ExtractTextPlugin('css/[name].css');
 
 // This is the production configuration.
 // It compiles slowly and is focused on producing a fast and minimal bundle.
@@ -45,7 +45,7 @@ module.exports = {
   ),
   output: {
     path: paths.themeBuild,
-    filename: '[name].bundle.js',
+    filename: 'js/[name].js',
   },
   module: {
     strictExportPresence: true,
@@ -91,7 +91,7 @@ module.exports = {
                 options: {
                   presets: [
                     [
-                      'env',
+                      '@babel/preset-env',
                       {
                         modules: false,
                         targets: {
@@ -127,7 +127,7 @@ module.exports = {
             use: [
               {
                 loader: require.resolve('url-loader'),
-                options: { limit: 10000 },
+                options: { name: 'images/[name].[ext]', limit: 10000 },
               },
             ],
           },
@@ -136,7 +136,7 @@ module.exports = {
             use: [
               {
                 loader: require.resolve('file-loader'),
-                options: { name: '[name].[ext]' },
+                options: { name: 'fonts/[name].[ext]' },
               },
             ],
           },

@@ -19,7 +19,7 @@ const resolveEntryJs = p =>
 // config before eject: we're in ./node_modules/react-scripts/config/
 module.exports = {
   themePath: resolveTheme('.'),
-  themeBuild: resolveTheme('build'),
+  themeBuild: resolveTheme('assets'),
   themePublic: resolveTheme('public'),
   themeEntry: resolveEntryJs(resolveTheme('src/js')),
   themeJs: resolveTheme('src/js'),
@@ -48,7 +48,7 @@ if (
 ) {
   module.exports = {
     themePath: resolveTheme('.'),
-    themeBuild: resolveOwn('../../build'),
+    themeBuild: resolveOwn('../../assets'),
     themePublic: resolveOwn('template/public'),
     themeJs: resolveThemeJs(resolveOwn('template/src/js')),
     themePackageJson: resolveOwn('package.json'),
