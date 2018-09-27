@@ -1,6 +1,6 @@
 {
   "name": "softserve-scripts",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Configuration and scripts for softserve-cli.",
   "main": "index.js",
   "repository": "https://github.com/wking-io/softserve-cli",
@@ -12,13 +12,7 @@
   "bugs": {
     "url": "https://github.com/wking-io/softserve-cli"
   },
-  "files": [
-    "bin",
-    "config",
-    "scripts",
-    "template",
-    "template-the-works"
-  ],
+  "files": ["bin", "config", "scripts", "template", "template-the-works"],
   "bin": {
     "softserve-scripts": "./bin/softserve-scripts.js"
   },
@@ -28,12 +22,7 @@
       "last 2 firefox versions",
       "last 2 edge versions"
     ],
-    "production": [
-      ">1%",
-      "last 4 versions",
-      "Firefox ESR",
-      "not ie < 11"
-    ]
+    "production": [">1%", "last 4 versions", "Firefox ESR", "not ie < 11"]
   },
   "dependencies": {
     "@babel/core": "7.1.0",
