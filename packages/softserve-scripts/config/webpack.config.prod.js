@@ -25,6 +25,7 @@ const postCSSLoaderOptions = {
       flexbox: 'no-2009',
     }),
     require('cssnano'),
+    require('tailwindcss')(paths.themePath + '/tailwind.js'),
   ],
 };
 

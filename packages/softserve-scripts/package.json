@@ -12,7 +12,13 @@
   "bugs": {
     "url": "https://github.com/wking-io/softserve-cli"
   },
-  "files": ["bin", "config", "scripts", "template", "template-the-works"],
+  "files": [
+    "bin",
+    "config",
+    "scripts",
+    "template",
+    "template-the-works"
+  ],
   "bin": {
     "softserve-scripts": "./bin/softserve-scripts.js"
   },
@@ -22,7 +28,12 @@
       "last 2 firefox versions",
       "last 2 edge versions"
     ],
-    "production": [">1%", "last 4 versions", "Firefox ESR", "not ie < 11"]
+    "production": [
+      ">1%",
+      "last 4 versions",
+      "Firefox ESR",
+      "not ie < 11"
+    ]
   },
   "dependencies": {
     "@babel/core": "7.1.0",
@@ -55,6 +66,7 @@
     "prettier-eslint-cli": "4.7.1",
     "ramda": "0.25.0",
     "sass-loader": "6.0.7",
+    "tailwind": "2.3.1",
     "url-loader": "1.0.1",
     "webpack": "4.20.2",
     "webpack-cli": "3.1.1"

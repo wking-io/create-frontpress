@@ -18,6 +18,7 @@ const postCSSLoaderOptions = {
     autoprefixer({
       flexbox: 'no-2009',
     }),
+    require('tailwindcss')(paths.themePath + '/tailwind.js'),
   ],
 };
 
