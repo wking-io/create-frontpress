@@ -126,7 +126,7 @@ function changeFilename(before, after) {
 }
 
 function copyTemplate(config) {
-  const template = config.theWorks ? 'template-the-works' : 'template';
+  const template = 'template';
   const templatePath = path.join(config.ownPath, template);
   if (fs.existsSync(templatePath)) {
     console.log('');

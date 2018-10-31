@@ -22,10 +22,6 @@ program
   .arguments('<theme-name>')
   .usage(`${chalk.green('<theme-name>')} [options]`)
   .option('--verbose', 'print additional logs')
-  .option(
-    '--the-works',
-    'use template with the works. Includes SASS variables, common Wordpress functions, and more.'
-  )
   .option('--info', 'print environment debug info')
   .option('--use-npm')
   .on('--help', () => {
