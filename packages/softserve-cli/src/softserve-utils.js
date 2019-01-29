@@ -7,6 +7,25 @@ const chalk = require('chalk');
 const Result = require('crocks/Result');
 const tryCatch = require('crocks/Result/tryCatch');
 const either = require('crocks/pointfree/either');
+const Async = require('crocks/Async');
+
+// always :: a -> b -> a
+const always = a => () => a;
+
+// identity :: a -> a
+const identity = a => a;
+
+// mkdir :: String -> Async Error ()
+const mkdir = Async.fromNode(fs.mkdir);
+
+// readdir :: (String, Options) -> Async Error (Array fs.Dirent)
+const readdir = Async.fromNode(fs.readdir);
+
+// dirExists :: String -> String -> Async Error Bool
+const dirExists = path => name =>
+  readdir(path, { withFileTypes: true }).map(nodes =>
+    nodes.some(node => node.isDirectory() && node.name === name)
+  );
 
 const buildConfigFor = target => (name, options) => ({
   name,
@@ -150,4 +169,9 @@ module.exports = {
   findInstallDirectory,
   changeToInstallDirectory,
   isValidDirectoryName,
+  always,
+  identity,
+  mkdir,
+  readdir,
+  dirExists,
 };
