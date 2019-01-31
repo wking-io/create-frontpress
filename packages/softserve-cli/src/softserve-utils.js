@@ -8,6 +8,15 @@ const Result = require('crocks/Result');
 const tryCatch = require('crocks/Result/tryCatch');
 const either = require('crocks/pointfree/either');
 const Async = require('crocks/Async');
+const pipe = require('crocks/helpers/pipe');
+const prop = require('crocks/Maybe/prop');
+const maybeToAsync = require('crocks/Async/maybeToAsync');
+const map = require('crocks/pointfree/map');
+const chain = require('crocks/pointfree/chain');
+const sequence = require('crocks/pointfree/sequence');
+
+const TEMPLATE_REPO_URL =
+  'https://github.com/wking-io/softserve-cli/trunk/packages/softserve-templates/';
 
 // always :: a -> b -> a
 const always = a => () => a;
@@ -26,6 +35,24 @@ const dirExists = path => name =>
   readdir(path, { withFileTypes: true }).map(nodes =>
     nodes.some(node => node.isDirectory() && node.name === name)
   );
+
+// asyncWith :: (a -> Async Error b) -> String -> Pair Config Config -> Async Error (Pair Config b)
+const asyncWith = f => key =>
+  pipe(
+    map(prop(key)),
+    map(maybeToAsync('prop')),
+    map(chain(f)),
+    sequence(Async)
+  );
+
+// replaceIn :: String -> String -> String -> Async Error String
+const replaceIn = path => from => to => pipe();
+// use path to get all files excluding folders
+// loop through the files
+// replace filename if needed
+// read
+// replace from -> to
+// write
 
 const buildConfigFor = target => (name, options) => ({
   name,
@@ -174,4 +201,6 @@ module.exports = {
   mkdir,
   readdir,
   dirExists,
+  asyncWith,
+  TEMPLATE_REPO_URL,
 };
